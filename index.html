@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>YANIS RJ</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{
+      background:#777777;
+      min-height:100vh;
+      font-family:'DM Sans',sans-serif;
+      overflow-x:hidden;
+    }
+
+    /* ── CANVAS BACKGROUND ── */
+    #bg-canvas{
+      position:fixed;top:0;left:0;
+      width:100%;height:100%;
+      z-index:0;
+      pointer-events:none;
+    }
+
+    /* ── LOCK SCREEN ── */
+    #lock-screen{
+      position:relative;z-index:10;
+      min-height:100vh;
+      display:flex;flex-direction:column;
+      align-items:center;justify-content:center;
+      padding:40px 20px;
+    }
+    .lock-box{
+      background:#100f0f;
+      border:0.5px solid rgba(255,255,255,0.08);
+      border-radius:24px;
+      padding:40px 32px;
+      display:flex;flex-direction:column;align-items:center;
+      backdrop-filter:blur(18px);
+      -webkit-backdrop-filter:blur(18px);
+      width:100%;max-width:340px;
+      animation:fadeUp 0.6s ease both;
+    }
+    @keyframes fadeUp{
+      from{opacity:0;transform:translateY(24px);}
+      to{opacity:1;transform:translateY(0);}
+    }
+    .lock-icon{
+      width:60px;height:60px;border-radius:50%;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:20px;
+    }
+    .lock-icon svg{width:26px;height:26px;fill:#888;}
+    .lock-title{
+      font-family:'Bebas Neue',cursive;
+      font-size:34px;letter-spacing:4px;color:#fff;
+      margin-bottom:6px;
+    }
+    .lock-sub{font-size:12px;color:#555;margin-bottom:28px;letter-spacing:0.5px;}
+    .lock-input-wrap{width:100%;position:relative;margin-bottom:12px;}
+    .lock-input-wrap input{
+      width:100%;
+      background:rgba(255,255,255,0.04);
+      border:0.5px solid rgba(255,255,255,0.1);
+      border-radius:12px;
+      padding:13px 44px 13px 18px;
+      font-size:20px;color:#fff;
+      letter-spacing:5px;
+      font-family:'DM Sans',sans-serif;
+      outline:none;
+      transition:border-color 0.2s;
+    }
+    .lock-input-wrap input:focus{border-color:rgba(255,255,255,0.3);}
+    .lock-input-wrap input.error{border-color:#E24B4A;animation:shake 0.3s;}
+    @keyframes shake{
+      0%,100%{transform:translateX(0);}
+      25%{transform:translateX(-7px);}
+      75%{transform:translateX(7px);}
+    }
+    .toggle-pw{
+      position:absolute;right:13px;top:50%;
+      transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;padding:4px;
+    }
+    .toggle-pw svg{width:17px;height:17px;fill:#555;}
+    .lock-btn{
+      width:100%;
+      background:#fff;color:#0a0a0a;
+      border:none;border-radius:12px;
+      padding:13px;
+      font-size:13px;font-weight:700;
+      font-family:'DM Sans',sans-serif;
+      cursor:pointer;letter-spacing:2px;
+      transition:background 0.2s,transform 0.15s;
+    }
+    .lock-btn:hover{background:#e8e8e8;transform:translateY(-1px);}
+    .lock-btn:active{transform:scale(0.98);}
+    .error-msg{font-size:12px;color:#E24B4A;margin-top:10px;opacity:0;transition:opacity 0.2s;}
+    .error-msg.show{opacity:1;}
+
+    /* ── MAIN PAGE ── */
+    #main-page{
+      display:none;
+      position:relative;z-index:10;
+      flex-direction:column;align-items:center;
+      padding:52px 20px 72px;
+    }
+
+    /* Avatar with pulse ring */
+    .avatar-wrap{position:relative;margin-bottom:22px;}
+    .avatar{
+      width:90px;height:90px;border-radius:50%;
+      background:rgba(255,255,255,0.05);
+      border:2px solid rgba(255,255,255,0.15);
+      display:flex;align-items:center;justify-content:center;
+      font-family:'Bebas Neue',cursive;
+      font-size:30px;color:#fff;letter-spacing:1px;
+      position:relative;z-index:1;
+    }
+    .pulse-ring{
+      position:absolute;inset:-8px;
+      border-radius:50%;
+      border:1px solid rgba(255,255,255,0.08);
+      animation:pulse-ring 2.5s ease-out infinite;
+    }
+    .pulse-ring:nth-child(2){animation-delay:0.8s;}
+    @keyframes pulse-ring{
+      0%{transform:scale(1);opacity:0.6;}
+      100%{transform:scale(1.5);opacity:0;}
+    }
+
+    .name{
+      font-family:'Bebas Neue',cursive;
+      font-size:44px;letter-spacing:4px;color:#fff;
+      text-align:center;line-height:1;margin-bottom:8px;
+      animation:fadeUp 0.5s 0.1s both;
+    }
+    .tagline{
+      font-size:12px;color:#555;
+      text-align:center;margin-bottom:40px;
+      letter-spacing:1px;text-transform:uppercase;
+      animation:fadeUp 0.5s 0.2s both;
+    }
+
+    /* Cards */
+    .links{width:100%;max-width:400px;display:flex;flex-direction:column;gap:10px;}
+    .link-card{
+      display:flex;align-items:center;
+      background:rgba(15,15,15,0.6);
+      border:0.5px solid rgba(255,255,255,0.07);
+      border-radius:16px;
+      padding:13px 16px;
+      text-decoration:none;
+      transition:background 0.25s,border-color 0.25s,transform 0.2s,box-shadow 0.25s;
+      position:relative;overflow:hidden;
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      opacity:0;
+      transform:translateY(20px);
+    }
+    .link-card.visible{
+      animation:cardIn 0.45s ease forwards;
+    }
+    @keyframes cardIn{
+      to{opacity:1;transform:translateY(0);}
+    }
+    .link-card::before{
+      content:'';
+      position:absolute;left:0;top:0;bottom:0;
+      width:3px;border-radius:3px 0 0 3px;
+      opacity:0;transition:opacity 0.25s;
+    }
+    .link-card:hover{
+      background:rgba(30,30,30,0.8);
+      border-color:rgba(255,255,255,0.14);
+      transform:translateY(-2px) scale(1.01);
+      box-shadow:0 8px 32px rgba(0,0,0,0.4);
+    }
+    .link-card:hover::before{opacity:1;}
+    .link-card.ig::before{background:linear-gradient(180deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);}
+    .link-card.dc::before{background:#5865F2;}
+    .link-card.tt::before{background:#fff;}
+    .link-card.sc::before{background:#FFFC00;}
+    .link-card.fb::before{background:#1877F2;}
+    .link-card.tw::before{background:#fff;}
+    .link-card.wa::before{background:#25D366;}
+    .link-card.tg::before{background:#29A9EA;}
+
+    .icon-wrap{
+      width:42px;height:42px;border-radius:12px;
+      display:flex;align-items:center;justify-content:center;
+      margin-right:14px;flex-shrink:0;
+      transition:transform 0.2s;
+    }
+    .link-card:hover .icon-wrap{transform:scale(1.1) rotate(-4deg);}
+    .icon-wrap svg{width:20px;height:20px;}
+    .link-info{flex:1;}
+    .link-name{font-size:15px;font-weight:600;color:#f0f0f0;letter-spacing:0.2px;}
+    .link-handle{font-size:12px;color:#555;margin-top:2px;}
+    .arrow{
+      color:#333;font-size:20px;margin-left:8px;
+      transition:transform 0.2s,color 0.2s;
+    }
+    .link-card:hover .arrow{transform:translateX(3px);color:#888;}
+
+    .footer{margin-top:48px;font-size:11px;color:#2a2a2a;letter-spacing:2px;}
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- PASSWORD SCREEN -->
+<div id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-icon">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+    </div>
+    <div class="lock-title">YANIS RJ</div>
+    <div class="lock-sub">enter password to continue</div>
+    <div class="lock-input-wrap">
+      <input type="password" id="pw-input" placeholder="••••••••" maxlength="20"
+        onkeydown="if(event.key==='Enter')checkPassword()"/>
+      <button class="toggle-pw" onclick="togglePw()">
+        <svg id="eye-icon" viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+      </button>
+    </div>
+    <button class="lock-btn" onclick="checkPassword()">ENTER</button>
+    <div class="error-msg" id="error-msg">Wrong password. Try again.</div>
+  </div>
+</div>
+
+<!-- MAIN PAGE -->
+<div id="main-page">
+  <div class="avatar-wrap">
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+    <div class="avatar">YR</div>
+  </div>
+  <div class="name">YANIS RJ</div>
+  <div class="tagline">all my socials in one place</div>
+
+  <div class="links" id="links-list">
+
+    <a class="link-card ig" href="https://instagram.com/yanis_redjradj" target="_blank">
+      <div class="icon-wrap" style="background:#1a0810">
+        <svg viewBox="0 0 24 24" fill="#E1306C"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">Instagram</div><div class="link-handle">@yanis_redjradj</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card dc" href="https://discord.com/users/yanis_rj" target="_blank">
+      <div class="icon-wrap" style="background:#0a0c1a">
+        <svg viewBox="0 0 24 24" fill="#5865F2"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">Discord</div><div class="link-handle">yanis_rj</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card tt" href="https://tiktok.com/@yanis.redjradj" target="_blank">
+      <div class="icon-wrap" style="background:#0d0d0d;border:0.5px solid #1e1e1e">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.27 8.27 0 004.84 1.55V6.79a4.85 4.85 0 01-1.07-.1z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">TikTok</div><div class="link-handle">@yanis.redjradj</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card sc" href="https://snapchat.com/add/yanis.redjradj" target="_blank">
+      <div class="icon-wrap" style="background:#161600">
+        <svg viewBox="0 0 24 24" fill="#FFFC00"><path d="M12.007 2c1.563 0 4.502.432 5.998 3.262.527 1.01.4 2.72.317 3.93l-.003.049c-.006.085-.012.168-.017.249.26-.05.537-.137.765-.27a1.07 1.07 0 0 1 .546-.143c.38 0 .75.206.75.558 0 .522-.748.887-1.362 1.09a1.93 1.93 0 0 0-.348.135c.014.05.033.11.058.176.19.49.55 1.217 1.19 1.878.322.334.688.611 1.1.795.212.094.366.293.366.528 0 .485-.59.826-1.116.988a6.26 6.26 0 0 1-1.161.22c-.093.014-.19.025-.252.096-.09.102-.09.254-.18.453-.08.18-.236.302-.424.302a.815.815 0 0 1-.32-.07c-.334-.146-.664-.22-1.002-.22-.307 0-.574.055-.851.163-.503.195-1.002.584-1.75.584-.048 0-.096-.002-.144-.006-.662-.05-1.175-.41-1.65-.728-.33-.22-.642-.429-.978-.527a2.69 2.69 0 0 0-.773-.107c-.305 0-.598.05-.873.148-.274.097-.537.24-.81.36a.85.85 0 0 1-.34.073c-.192 0-.35-.126-.43-.31-.088-.196-.088-.345-.176-.445-.062-.07-.158-.082-.25-.095a6.26 6.26 0 0 1-1.162-.22C4.59 14.86 4 14.52 4 14.035c0-.235.155-.434.366-.528.412-.184.778-.46 1.1-.795.64-.661 1-1.387 1.19-1.878.026-.067.044-.127.058-.176a1.93 1.93 0 0 0-.348-.136C5.752 10.32 5 9.955 5 9.433c0-.352.37-.558.75-.558.186 0 .374.05.546.143.23.134.508.22.769.271l-.02-.298c-.082-1.21-.21-2.92.318-3.93C8.857 2.437 11.407 2 12.007 2z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">Snapchat</div><div class="link-handle">yanis.redjradj</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card fb" href="https://www.facebook.com/share/18XRkSPbaR/?mibextid=wwXIfr" target="_blank">
+      <div class="icon-wrap" style="background:#020a18">
+        <svg viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">Facebook</div><div class="link-handle">Yanis Redjradj</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card tw" href="https://x.com/yanis_redjradj" target="_blank">
+      <div class="icon-wrap" style="background:#0d0d0d;border:0.5px solid #1e1e1e">
+        <svg viewBox="0 0 24 24" fill="#fff"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.748l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">X (Twitter)</div><div class="link-handle">@yanis_redjradj</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card wa" href="https://wa.me/213676938038" target="_blank">
+      <div class="icon-wrap" style="background:#031508">
+        <svg viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">WhatsApp</div><div class="link-handle">+213 676 938 038</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+    <a class="link-card tg" href="https://t.me/+213676938038" target="_blank">
+      <div class="icon-wrap" style="background:#041018">
+        <svg viewBox="0 0 24 24" fill="#29A9EA"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.941z"/></svg>
+      </div>
+      <div class="link-info"><div class="link-name">Telegram</div><div class="link-handle">+213 676 938 038</div></div>
+      <span class="arrow">›</span>
+    </a>
+
+  </div>
+  <div class="footer">YANIS RJ &nbsp;·&nbsp; 2026</div>
+</div>
+
+<script>
+/* ── ANIMATED BACKGROUND ── */
+const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let W, H, particles=[], mouse={x:null,y:null};
+
+function resize(){
+  W=canvas.width=window.innerWidth;
+  H=canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener('resize',resize);
+window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+
+class Particle{
+  constructor(){this.reset(true);}
+  reset(init){
+    this.x=Math.random()*W;
+    this.y=init?Math.random()*H:H+10;
+    this.r=Math.random()*1.5+0.3;
+    this.speed=Math.random()*0.4+0.1;
+    this.opacity=Math.random()*0.5+0.1;
+    this.dx=(Math.random()-0.5)*0.3;
+  }
+  update(){
+    this.y-=this.speed;
+    this.x+=this.dx;
+    if(this.y<-5)this.reset(false);
+  }
+  draw(){
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${this.opacity})`;
+    ctx.fill();
+  }
+}
+
+// Floating orbs
+class Orb{
+  constructor(){
+    this.x=Math.random()*W;
+    this.y=Math.random()*H;
+    this.r=Math.random()*120+60;
+    this.speedX=(Math.random()-0.5)*0.3;
+    this.speedY=(Math.random()-0.5)*0.2;
+    this.hue=Math.random()<0.5?220:270;
+    this.opacity=Math.random()*0.04+0.02;
+  }
+  update(){
+    this.x+=this.speedX;
+    this.y+=this.speedY;
+    if(this.x<-this.r)this.x=W+this.r;
+    if(this.x>W+this.r)this.x=-this.r;
+    if(this.y<-this.r)this.y=H+this.r;
+    if(this.y>H+this.r)this.y=-this.r;
+  }
+  draw(){
+    const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r);
+    g.addColorStop(0,`hsla(${this.hue},60%,50%,${this.opacity})`);
+    g.addColorStop(1,'transparent');
+    ctx.beginPath();
+    ctx.arc(this.x,this.y,this.r,0,Math.PI*2);
+    ctx.fillStyle=g;
+    ctx.fill();
+  }
+}
+
+for(let i=0;i<120;i++)particles.push(new Particle());
+const orbs=Array.from({length:5},()=>new Orb());
+
+function drawBg(){
+  // Dark gradient background
+  const grad=ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'#0d0d0f');
+  grad.addColorStop(0.5,'#0a0a0c');
+  grad.addColorStop(1,'#080808');
+  ctx.fillStyle=grad;
+  ctx.fillRect(0,0,W,H);
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+  drawBg();
+  orbs.forEach(o=>{o.update();o.draw();});
+  particles.forEach(p=>{p.update();p.draw();});
+}
+animate();
+
+/* ── PASSWORD ── */
+const CORRECT='123456789';
+
+function checkPassword(){
+  const input=document.getElementById('pw-input');
+  const err=document.getElementById('error-msg');
+  if(input.value===CORRECT){
+    const lock=document.getElementById('lock-screen');
+    lock.style.opacity='0';
+    lock.style.transition='opacity 0.4s';
+    setTimeout(()=>{
+      lock.style.display='none';
+      const main=document.getElementById('main-page');
+      main.style.display='flex';
+      // staggered card entrance
+      const cards=document.querySelectorAll('.link-card');
+      cards.forEach((c,i)=>{
+        setTimeout(()=>c.classList.add('visible'),i*80);
+      });
+    },400);
+  } else {
+    input.classList.add('error');
+    err.classList.add('show');
+    input.value='';
+    input.focus();
+    setTimeout(()=>{
+      input.classList.remove('error');
+      err.classList.remove('show');
+    },2000);
+  }
+}
+
+function togglePw(){
+  const input=document.getElementById('pw-input');
+  const icon=document.getElementById('eye-icon');
+  if(input.type==='password'){
+    input.type='text';
+    icon.innerHTML='<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24M1 1l22 22" stroke="#555" stroke-width="2" fill="none" stroke-linecap="round"/>';
+  } else {
+    input.type='password';
+    icon.innerHTML='<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>';
+  }
+}
+</script>
+</body>
+</html>
